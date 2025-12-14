@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Snake Game</title>
+
+<style>
+body {
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  user-select: none;
+  overflow: hidden;
+}
+
+canvas {
+  background: #111;
+  margin-bottom: 12px;
+  border-radius: 8px;
+}
+
+/* Touch controls */
+.controls {
+  display: grid;
+  grid-template-columns: repeat(3, 70px);
+  gap: 8px;
+}
+
+.btn {
+  width: 70px;
+  height: 70px;
+  background: #333;
+  color: #fff;
+  font-size: 22px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.btn:active {
+  background: #555;
+}
+
+/* Rotate warning */
+#rotateWarning {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #fff;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  text-align: center;
+  z-index: 999;
+}
+</style>
+</head>
+
+<body>
+
+<div id="rotateWarning">
+  🔄 Please rotate your phone to landscape mode
+</div>
+
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+
+<div class="controls">
+  <div></div>
+  <button class="btn" id="upBtn">↑</button>
+  <div></div>
+
+  <button class="btn" id="leftBtn">←</button>
+  <button class="btn" id="pauseBtn">⏸</button>
+  <button class="btn" id="rightBtn">→</button>
+
+  <button class="btn" id="restartBtn">⟳</button>
+  <button class="btn" id="downBtn">↓</button>
+  <div></div>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const rotateWarning = document.getElementById("rotateWarning");
+
+const CELL = 20;
+let COLS = canvas.width / CELL;
+let ROWS = canvas.height / CELL;
+
+let snake, direction, food, paused, gameOver;
+
+/* Orientation check */
+function checkOrientation() {
+  if (window.innerWidth < window.innerHeight) {
+    rotateWarning.style.display = "flex";
+    paused = true;
+  } else {
+    rotateWarning.style.display = "none";
+    paused = false;
+  }
+}
+window.addEventListener("resize", checkOrientation);
+
+/* Game setup */
+function resetGame() {
+  snake = [{ x: 5, y: 5 }];
+  direction = "right";
+  paused = false;
+  gameOver = false;
+  food = randomFood();
+}
+
+function randomFood() {
+  return {
+    x: Math.floor(Math.random() * COLS),
+    y: Math.floor(Math.random() * ROWS)
+  };
+}
+
+/* Keyboard */
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowUp" && direction !== "down") direction = "up";
+  if (e.key === "ArrowDown" && direction !== "up") direction = "down";
+  if (e.key === "ArrowLeft" && direction !== "right") direction = "left";
+  if (e.key === "ArrowRight" && direction !== "left") direction = "right";
+  if (e.key === "5") paused = !paused;
+  if (e.key === "0") resetGame();
+});
+
+/* Touch */
+upBtn.onclick = () => direction !== "down" && (direction = "up");
+downBtn.onclick = () => direction !== "up" && (direction = "down");
+leftBtn.onclick = () => direction !== "right" && (direction = "left");
+rightBtn.onclick = () => direction !== "left" && (direction = "right");
+pauseBtn.onclick = () => paused = !paused;
+restartBtn.onclick = () => resetGame();
+
+/* Game loop */
+function update() {
+  checkOrientation();
+  if (paused || gameOver) return;
+
+  let head = { ...snake[snake.length - 1] };
+
+  if (direction === "up") head.y--;
+  if (direction === "down") head.y++;
+  if (direction === "left") head.x--;
+  if (direction === "right") head.x++;
+
+  if (
+    head.x < 0 ||
+    head.y < 0 ||
+    head.x >= COLS ||
+    head.y >= ROWS ||
+    snake.some(s => s.x === head.x && s.y === head.y)
+  ) {
+    gameOver = true;
+    setTimeout(resetGame, 300); // auto restart
+    return;
+  }
+
+  snake.push(head);
+
+  if (head.x === food.x && head.y === food.y) {
+    food = randomFood();
+  } else {
+    snake.shift();
+  }
+
+  draw();
+}
+
+function draw() {
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "lime";
+  snake.forEach(s =>
+    ctx.fillRect(s.x * CELL, s.y * CELL, CELL, CELL)
+  );
+
+  ctx.fillStyle = "red";
+  ctx.fillRect(food.x * CELL, food.y * CELL, CELL, CELL);
+}
+
+resetGame();
+checkOrientation();
+setInterval(update, 200);
+</script>
+
+</body>
+</html>
